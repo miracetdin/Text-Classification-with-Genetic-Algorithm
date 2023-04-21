@@ -17,24 +17,36 @@ struct cache{
     int length;
 };
 
+// define a dictionary structure
+typedef struct dictionary DICTIONARY;
+struct dictionary{
+    char *word;
+    char *class;
+    int frequency;
+};
+
+// define a cromosom structure 
+
 // function prototypes
 FILE *open_file(char *fileName);
 CACHE *read_file(char *fileName);
 void print_dataSet(CACHE *cache);
+DICTIONARY *create_dictionary(CACHE *cache);
 
 int main(void){
     CACHE *cache;
-    DATA *dataSet;
+    DICTIONARY *dict;
 
     char *fileName;
     int i;
 
     // reading the file
     cache = read_file("amazon_reviews.csv");
-    dataSet = cache->dataSet;
 
     // print the data set
-    print_dataSet(cache);
+    //print_dataSet(cache);
+
+    dict = create_dictionary(cache);
 
     return 0;
 }
@@ -145,7 +157,132 @@ void print_dataSet(CACHE *cache){
         printf("\t");
         printf(cache->dataSet[i].class);
         printf("\t");
-        printf(cache->dataSet->text);
+        printf(cache->dataSet[i].text);
         printf("\n");
     }
+}
+
+DICTIONARY *create_dictionary(CACHE *cache){
+    DICTIONARY *dictionary1, *dictionary2;
+
+    int i, j;
+    int same = 0;
+    char *token;
+    int counter1, counter2 = 0;
+    
+    dictionary1 = (DICTIONARY*)malloc(1000*sizeof(DICTIONARY));
+    if(dictionary1 == NULL){
+        printf("ERROR 5: dictionary 1 cannot be created!");
+        exit(1);
+    }
+    dictionary2 = (DICTIONARY*)malloc(1000*sizeof(DICTIONARY));
+    if(dictionary2 == NULL){
+        printf("ERROR 6: dictionary 2 cannot be created!");
+        exit(1);
+    }
+    
+    // assign the words to dictionaries
+    counter1 = 0;
+    counter2 = 0;
+    printf("num: %d\n", cache->num);
+    for(i=0; i<cache->num; i++){
+        // disctionary 1 operations    
+        if(strcmp(cache->dataSet[i].class, "1") == 0){
+            token = strtok(cache->dataSet[i].text, " ");
+
+            while(token){
+                if(counter1 != 0){
+                    for(j=0; j<counter1; j++){
+                        if(strcmp(dictionary1[j].word, token) == 0){
+                            dictionary1[j].frequency++;
+                            same = 1;
+                        } 
+                    }
+                    if(same == 0){
+                        counter1++;
+                        // TODO: realloc return  null
+                        dictionary1 = (DICTIONARY*)realloc(dictionary1, (counter1+1)*sizeof(DICTIONARY));
+                        dictionary1[counter1-1].word = token;
+                        dictionary1[counter1-1].class = cache->dataSet[i].class;
+                        dictionary1[counter1-1].frequency = 1;
+                    }
+                    else{
+                        same = 0;
+                    }
+                }
+                else{
+                    counter1++;
+                    // TODO: realloc return  null
+                    dictionary1 = (DICTIONARY*)realloc(dictionary1, (counter1+1)*sizeof(DICTIONARY));
+                    dictionary1[0].word = token;
+                    dictionary1[0].class = cache->dataSet[i].class;
+                    dictionary1[0].frequency = 1;
+                }
+                token = strtok(NULL, " ");
+            }
+        }
+        // dictionary 2 operations
+        else{
+            token = strtok(cache->dataSet[i].text, " ");
+
+            while(token){
+                if(counter2 != 0){
+                    for(j=0; j<counter2; j++){
+                        if(strcmp(dictionary2[j].word, token) == 0){
+                            dictionary2[j].frequency++;
+                            same = 1;
+                        } 
+                    }
+                    if(same == 0){
+                        counter2++;
+                        // TODO: realloc return  null
+                        dictionary2 = (DICTIONARY*)realloc(dictionary2, (counter2+1)*sizeof(DICTIONARY));
+                        dictionary2[counter2-1].word = token;
+                        dictionary2[counter2-1].class = cache->dataSet[i].class;
+                        dictionary2[counter2-1].frequency = 1;
+                    }
+                    else{
+                        same = 0;
+                    }
+                }
+                else{
+                    counter2++;
+                    // TODO: realloc return  null
+                    dictionary2 = (DICTIONARY*)realloc(dictionary2, (counter2+1)*sizeof(DICTIONARY));
+                    dictionary2[0].word = token;
+                    dictionary2[0].class = cache->dataSet[i].class;
+                    dictionary2[0].frequency = 1;
+                }
+                token = strtok(NULL, " ");
+            }
+        }
+    }
+    
+    printf("Dictionary 1 size: %d\n", counter1);
+    for(i=0; i<5; i++){
+        printf(dictionary1[i].word);
+        printf("\t");
+        printf(dictionary1[i].class);
+        printf("\t");
+        printf("%d\n", dictionary1[i].frequency);
+    }
+
+    printf(dictionary1[0].word);
+    printf("\n");
+    printf(dictionary1[1867].word);
+
+    printf("\nDictionary 2 size: %d\n", counter2);
+    for(i=0; i<5; i++){
+        printf(dictionary2[i].word);
+        printf("\t");
+        printf(dictionary2[i].class);
+        printf("\t");
+        printf("%d\n", dictionary2[i].frequency);
+    }
+
+    printf(dictionary2[0].word);
+    printf("\n");
+    printf(dictionary2[1802].word);
+
+    return dictionary1;
 }
