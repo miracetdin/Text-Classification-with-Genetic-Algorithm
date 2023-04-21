@@ -47,21 +47,20 @@ int main(void){
     CACHE *cache;
     DICT_CACHE *dict_cache;
 
-    char *fileName;
-    int i;
-
     // reading the file
     cache = read_file("amazon_reviews.csv");
 
     // print the data set
-    printf("\nDATA SET     ------------------------------------------\n");
-    //print_dataSet(cache);
+    printf("\n\n.....DATA SET.....\n\n");
+    print_dataSet(cache);
     
     // creating dictionaries
     dict_cache = create_dictionary(cache);
 
     // print the dictionaries
-    printf("\nDICTIONARIES ------------------------------------------\n");
+    printf("\n------------------------------------");
+    printf("\n------------------------------------");
+    printf("\n\n.....DICTIONARIES.....\n\n");
     print_dictionaries(dict_cache);
 
     return 0;
@@ -163,9 +162,9 @@ CACHE *read_file(char *fileName){
 void print_dataSet(CACHE *cache){
     int i = 0;
     
-    printf("Your Data Set:\n");
+    printf("Data Set Info:\n");
     printf("Number of data (lines): %d\n", cache->num);
-    printf("Max length of lines: %d\n", cache->length);
+    printf("Max length of lines: %d\n\n", cache->length);
     printf("Index\tClass\tText\n");
     printf("-----\t-----\t----\n");
     for(i=0; i<cache->num; i++){
@@ -202,18 +201,22 @@ DICT_CACHE *create_dictionary(CACHE *cache){
     counter1 = 0;
     counter2 = 0;
     for(i=0; i<cache->num; i++){
-        // disctionary 1 operations    
+        // dictionary 1 operations    
         if(strcmp(cache->dataSet[i].class, "1") == 0){
+            // get the first word of the text
             token = strtok(cache->dataSet[i].text, " ");
 
             while(token){
+                // if the dictionary is not empty
                 if(counter1 != 0){
                     for(j=0; j<counter1; j++){
+                        // if the word is already in the dictionary
                         if(strcmp(dictionary1[j].word, token) == 0){
                             dictionary1[j].frequency++;
                             same = 1;
                         } 
                     }
+                    // if the word is not in the dictionary
                     if(same == 0){
                         counter1++;
                         // TODO: realloc return  null
@@ -226,6 +229,7 @@ DICT_CACHE *create_dictionary(CACHE *cache){
                         same = 0;
                     }
                 }
+                // if the dictionary is not empty
                 else{
                     counter1++;
                     // TODO: realloc return  null
@@ -279,9 +283,6 @@ DICT_CACHE *create_dictionary(CACHE *cache){
         printf("ERROR 7: dict_cache cannot be created!");
         exit(1);
     }
-
-    // dict_cache->dict1 = (DICTIONARY*)malloc(sizeof(dictionary1));
-    // dict_cache->dict2 = (DICTIONARY*)malloc(sizeof(dictionary2));
     
     dict_cache->dict1 = dictionary1;
     dict_cache->num1 = counter1;
