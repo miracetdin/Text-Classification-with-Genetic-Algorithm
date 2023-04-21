@@ -181,6 +181,7 @@ DICT_CACHE *create_dictionary(CACHE *cache){
     DICT_CACHE *dict_cache;
     DICTIONARY *dictionary1, *dictionary2;
 
+    char *class1;
     int i, j;
     int same = 0;
     char *token;
@@ -197,12 +198,21 @@ DICT_CACHE *create_dictionary(CACHE *cache){
         exit(1);
     }
     
+    class1 = (char*)malloc(sizeof(char));
+    if(class1 == NULL){
+        printf("ERROR 7: class 1 cannot be created!");
+        exit(1);
+    }
+
+    // assign the classes from data set
+    class1 = cache->dataSet[0].class;
+
     // assign the words to dictionaries
     counter1 = 0;
     counter2 = 0;
     for(i=0; i<cache->num; i++){
         // dictionary 1 operations    
-        if(strcmp(cache->dataSet[i].class, "1") == 0){
+        if(strcmp(cache->dataSet[i].class, class1) == 0){
             // get the first word of the text
             token = strtok(cache->dataSet[i].text, " ");
 
@@ -280,7 +290,7 @@ DICT_CACHE *create_dictionary(CACHE *cache){
 
     dict_cache = (DICT_CACHE*)malloc(sizeof(DICT_CACHE));
     if(dict_cache == NULL){
-        printf("ERROR 7: dict_cache cannot be created!");
+        printf("ERROR 8: dict_cache cannot be created!");
         exit(1);
     }
     
