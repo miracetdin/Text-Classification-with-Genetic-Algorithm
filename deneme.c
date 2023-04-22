@@ -34,7 +34,20 @@ struct dict_cache{
     int num2;
 };
 
-// define a cromosom structure 
+typedef struct nucleotide NUCLEOTIDE;
+struct nucleotide{
+    char *word;
+    int frequency;
+};
+
+// define a indivual structure
+typedef struct individual INDIVIDUAL;
+struct individual{
+    NUCLEOTIDE *class1;
+    NUCLEOTIDE *class2;
+    int num;
+    float fitness;
+};
 
 // function prototypes
 FILE *open_file(char *fileName);
@@ -42,10 +55,15 @@ CACHE *read_file(char *fileName);
 void print_dataSet(CACHE *cache);
 DICT_CACHE *create_dictionary(CACHE *cache);
 void print_dictionaries(DICT_CACHE *dict_cache);
+DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float threshold);
+void genetic_algorithm(DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate);
 
 int main(void){
     CACHE *cache;
     DICT_CACHE *dict_cache;
+
+    int numWord, numIndiv;
+    float threshold=0.90, mutatRate;
 
     // reading the file
     cache = read_file("amazon_reviews.csv");
@@ -62,6 +80,21 @@ int main(void){
     printf("\n------------------------------------");
     printf("\n\n.....DICTIONARIES.....\n\n");
     print_dictionaries(dict_cache);
+
+    // make dictionaries unique
+    dict_cache = filter_dicts(dict_cache, threshold);
+
+    // print the dictionaries
+    printf("\n------------------------------------");
+    printf("\n------------------------------------");
+    printf("\n\n.....FLTERED DICTIONARIES.....\n\n");
+    print_dictionaries(dict_cache);
+
+    // print the dictionaries
+    printf("\n------------------------------------");
+    printf("\n------------------------------------");
+    printf("\n\n.....GENETIC ALGORITHM.....\n\n");
+    //genetic_algorithm(dict_cache, numWord, numIndiv, mutatRate);
 
     return 0;
 }
@@ -306,6 +339,8 @@ void print_dictionaries(DICT_CACHE *dict_cache){
     int i;
 
     printf("Dictionary 1 size: %d\n", dict_cache->num1);
+    printf("Word\tClass\tFrequency\n");
+    printf("----\t-----\t---------\n");
     for(i=1; i<=5; i++){
         printf(dict_cache->dict1[i].word);
         printf("\t");
@@ -315,6 +350,8 @@ void print_dictionaries(DICT_CACHE *dict_cache){
     }
    
     printf("\nDictionary 2 size: %d\n", dict_cache->num2);
+    printf("Word\tClass\tFrequency\n");
+    printf("----\t-----\t---------\n");
     for(i=1; i<=5; i++){
         printf(dict_cache->dict2[i].word);
         printf("\t");
@@ -322,4 +359,96 @@ void print_dictionaries(DICT_CACHE *dict_cache){
         printf("\t");
         printf("%d\n", dict_cache->dict2[i].frequency);
     }    
+}
+
+DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float threshold){
+    DICTIONARY *dictionary1, *dictionary2;
+
+    int i, j;
+    int counter1, counter2;
+    float freqRate, freqRate1, freqRate2;
+
+    dictionary1 = (DICTIONARY*)malloc(dict_cache->num1 * sizeof(DICTIONARY));
+    if(dictionary1 == NULL){
+        printf("ERROR 9: dictionary1 cannot be created!");
+        exit(1);
+    }
+
+    dictionary2 = (DICTIONARY*)malloc(dict_cache->num2 * sizeof(DICTIONARY));
+    if(dictionary2 == NULL){
+        printf("ERROR 9: dictionary2 cannot be created!");
+        exit(1);
+    }
+
+    dictionary1 = dict_cache->dict1;
+    dictionary2 = dict_cache->dict2;
+    counter1 = dict_cache->num1;
+    counter2 = dict_cache->num2;
+
+    for(i=1; i<dict_cache->num1; i++){
+        for(j=1; j<dict_cache->num2; j++){
+            if(strcmp(dictionary1[i].word, dictionary2[j].word) == 0){
+                freqRate1 = (float)(dictionary1[i].frequency) / dict_cache->num1;
+                freqRate2 = (float)(dictionary2[j].frequency) / dict_cache->num2;
+                if(freqRate1 < freqRate2){
+                    freqRate = (float)(freqRate1) / freqRate2;
+                    if(threshold > freqRate){
+                        dictionary1[i].word = "";
+                        counter1--;
+                    }
+                }
+                else if(freqRate2 < freqRate1){
+                    freqRate = (float)(freqRate2) / freqRate1;
+                    if(threshold > freqRate){
+                        dictionary2[j].word = "";
+                        counter2--;
+                    }
+                }
+                else{
+                    dictionary1[i].word = "";
+                    counter1--;
+                    dictionary2[j].word = "";
+                    counter2--;
+                }
+                j = dict_cache->num2;
+            }
+        }
+    }
+
+    dict_cache->dict1 = (DICTIONARY*)realloc(dict_cache->dict1, counter1*sizeof(DICTIONARY));
+    if(dict_cache->dict1 == NULL){
+        printf("ERROR 10: dict1 cannot be created!");
+        exit(1);
+    }
+
+    dict_cache->dict2 = (DICTIONARY*)realloc(dict_cache->dict2, counter2*sizeof(DICTIONARY));
+    if(dict_cache->dict2 == NULL){
+        printf("ERROR 11: dict1 cannot be created!");
+        exit(1);
+    }
+
+    j = 0;
+    for(i=0; i<counter1; i++){
+        if(strcmp(dictionary1[i].word, "") != 0){
+            dict_cache->dict1[j] = dictionary1[i];
+            j++;
+        }
+    }
+
+    j = 0;
+    for(i=0; i<counter2; i++){
+        if(strcmp(dictionary2[i].word, "") != 0){
+            dict_cache->dict2[j] = dictionary2[i];
+            j++;
+        }
+    }
+
+    dict_cache->num1 = counter1;
+    dict_cache->num2 = counter2;
+
+    return dict_cache;
+}
+
+void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate){
+
 }
