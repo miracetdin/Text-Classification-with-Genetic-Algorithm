@@ -493,7 +493,8 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float 
     POPULATION *population;
 
     int i, j;
-
+    // STEP 1: Creating Population ---------------------------------
+    // define the pointers
     individual = (INDIVIDUAL*)malloc(sizeof(INDIVIDUAL));
     if(individual == NULL){
         printf("ERROR 13: individual cannot be created!");
@@ -513,19 +514,23 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float 
             exit(1);
         }
     }
-
+    
+    // create individual randomly
     srand(time(NULL)); 
     for(i=0; i<numIndiv; i++){
         individual = create_individual(dict_cache, numWord);
         population->individuals[i] = *individual;
     }
 
+    // print the population
     printf("\nPOPULATION\n");
     printf("----------\n");
     for(i=0; i<numIndiv; i++){
+        printf("Individual %d: \n", i);
         printf("[");
         print_individual(&(population->individuals[i]), numWord);
         printf("]");
+        printf("\n");
     }
 
 }
@@ -542,7 +547,7 @@ INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord){
         exit(1);
     }
 
-    // assign random words to individual
+    // assign random words (nucleotid codes) to individual
     for(i=0; i<numWord; i++){
         // randomly dictionary selection     
         j = rand() % 2;
