@@ -52,7 +52,8 @@ struct individual{
 typedef struct population POPULATION;
 struct population{
     INDIVIDUAL *individuals;
-    int num;  
+    int numIndiv;
+    int numWord;
 };
 
 // function prototypes
@@ -63,9 +64,11 @@ DICT_CACHE *create_dictionary(CACHE *cache);
 void print_dictionaries(DICT_CACHE *dict_cache);
 DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float thresholdSame, float thresholdExtreme);
 int compare_frequencies(const void *a, const void *b);
-void genetic_algorithm(DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate);
+void genetic(CACHE *cache, DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate);
 INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord);
 void print_individual(INDIVIDUAL *individual, int numWord);
+void genetic_algorithm(CACHE *cache, POPULATION *population);
+POPULATION *fitness_function(CACHE *cache, POPULATION *population);
 
 int main(void){
     CACHE *cache;
@@ -103,7 +106,7 @@ int main(void){
     printf("\n------------------------------------");
     printf("\n------------------------------------");
     printf("\n\n.....GENETIC ALGORITHM.....\n\n");
-    genetic_algorithm(dict_cache, numWord, numIndiv, mutatRate);
+    genetic(cache, dict_cache, numWord, numIndiv, mutatRate);
 
     return 0;
 }
@@ -488,12 +491,11 @@ int compare_frequencies(const void *a, const void *b){
     return dictionary1->frequency - dictionary2->frequency;
 }
 
-void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate){
+void genetic(CACHE *cache, DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate){
     INDIVIDUAL *individual;
     POPULATION *population;
 
     int i, j;
-    // STEP 1: Creating Population ---------------------------------
     // define the pointers
     individual = (INDIVIDUAL*)malloc(sizeof(INDIVIDUAL));
     if(individual == NULL){
@@ -522,16 +524,22 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float 
         population->individuals[i] = *individual;
     }
 
+    population->numIndiv = numIndiv;
+    population->numWord = numWord;
+
     // print the population
     printf("\nPOPULATION\n");
     printf("----------\n");
-    for(i=0; i<numIndiv; i++){
+    for(i=0; i<population->numIndiv; i++){
         printf("Individual %d: \n", i);
         printf("[");
-        print_individual(&(population->individuals[i]), numWord);
+        print_individual(&(population->individuals[i]), population->numWord);
         printf("]");
         printf("\n");
     }
+
+    // start the genetic algorithm optimization
+    genetic_algorithm(cache, population);
 
 }
 
@@ -600,4 +608,12 @@ void print_individual(INDIVIDUAL *individual, int numWord){
         }
     }
     printf("\n");
+}
+
+void genetic_algorithm(CACHE *cache, POPULATION *population){
+    fitness_function(cache, population);
+}
+
+POPULATION *fitness_function(CACHE *cache, POPULATION *population){
+    print_dataSet(cache);
 }
