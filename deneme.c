@@ -55,7 +55,8 @@ CACHE *read_file(char *fileName);
 void print_dataSet(CACHE *cache);
 DICT_CACHE *create_dictionary(CACHE *cache);
 void print_dictionaries(DICT_CACHE *dict_cache);
-DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float threshold);
+DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float thresholdSame, float thresholdExtreme);
+int compare_frequencies(const void *a, const void *b);
 void genetic_algorithm(DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate);
 
 int main(void){
@@ -63,7 +64,7 @@ int main(void){
     DICT_CACHE *dict_cache;
 
     int numWord, numIndiv;
-    float threshold=0.90, mutatRate;
+    float thresholdSame=0.33, thresholdExtreme=0.10, mutatRate;
 
     // reading the file
     cache = read_file("amazon_reviews.csv");
@@ -82,7 +83,7 @@ int main(void){
     print_dictionaries(dict_cache);
 
     // make dictionaries unique
-    dict_cache = filter_dicts(dict_cache, threshold);
+    dict_cache = filter_dicts(dict_cache, thresholdSame, thresholdExtreme);
 
     // print the dictionaries
     printf("\n------------------------------------");
@@ -361,22 +362,23 @@ void print_dictionaries(DICT_CACHE *dict_cache){
     }    
 }
 
-DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float threshold){
+DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float thresholdSame, float thresholdExtreme){
     DICTIONARY *dictionary1, *dictionary2;
 
     int i, j;
     int counter1, counter2;
     float freqRate, freqRate1, freqRate2;
 
-    dictionary1 = (DICTIONARY*)malloc(dict_cache->num1 * sizeof(DICTIONARY));
+    // define two pointers
+    dictionary1 = (DICTIONARY*)malloc(sizeof(DICTIONARY));
     if(dictionary1 == NULL){
         printf("ERROR 9: dictionary1 cannot be created!");
         exit(1);
     }
 
-    dictionary2 = (DICTIONARY*)malloc(dict_cache->num2 * sizeof(DICTIONARY));
+    dictionary2 = (DICTIONARY*)malloc(sizeof(DICTIONARY));
     if(dictionary2 == NULL){
-        printf("ERROR 9: dictionary2 cannot be created!");
+        printf("ERROR 10: dictionary2 cannot be created!");
         exit(1);
     }
 
@@ -385,25 +387,33 @@ DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float threshold){
     counter1 = dict_cache->num1;
     counter2 = dict_cache->num2;
 
+    // if these dictionaries have the same word
     for(i=1; i<dict_cache->num1; i++){
         for(j=1; j<dict_cache->num2; j++){
+            // dictionaries have the same word
             if(strcmp(dictionary1[i].word, dictionary2[j].word) == 0){
+                // calculate the frequencies of the word for each class
                 freqRate1 = (float)(dictionary1[i].frequency) / dict_cache->num1;
                 freqRate2 = (float)(dictionary2[j].frequency) / dict_cache->num2;
+                // the frequency of the class 1 is smaller
                 if(freqRate1 < freqRate2){
+                    // how many times smaller
                     freqRate = (float)(freqRate1) / freqRate2;
-                    if(threshold > freqRate){
+                    // if it smaller than threshold, delete it
+                    if(thresholdSame > freqRate){
                         dictionary1[i].word = "";
                         counter1--;
                     }
                 }
+                // the frequency of the class 2 is smaller
                 else if(freqRate2 < freqRate1){
                     freqRate = (float)(freqRate2) / freqRate1;
-                    if(threshold > freqRate){
+                    if(thresholdSame > freqRate){
                         dictionary2[j].word = "";
                         counter2--;
                     }
                 }
+                // the frequencies are equal, delete them
                 else{
                     dictionary1[i].word = "";
                     counter1--;
@@ -415,18 +425,20 @@ DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float threshold){
         }
     }
 
+    // dictionaries are re-created with new sizes
     dict_cache->dict1 = (DICTIONARY*)realloc(dict_cache->dict1, counter1*sizeof(DICTIONARY));
     if(dict_cache->dict1 == NULL){
-        printf("ERROR 10: dict1 cannot be created!");
+        printf("ERROR 11: dict1 cannot be created!");
         exit(1);
     }
 
     dict_cache->dict2 = (DICTIONARY*)realloc(dict_cache->dict2, counter2*sizeof(DICTIONARY));
     if(dict_cache->dict2 == NULL){
-        printf("ERROR 11: dict1 cannot be created!");
+        printf("ERROR 12: dict1 cannot be created!");
         exit(1);
     }
 
+    // deleted values are not imported into the new dictionaries
     j = 0;
     for(i=0; i<counter1; i++){
         if(strcmp(dictionary1[i].word, "") != 0){
@@ -443,10 +455,29 @@ DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float threshold){
         }
     }
 
+    // the lengths of dictionaries are updated
     dict_cache->num1 = counter1;
     dict_cache->num2 = counter2;
 
+    // words are sorted by frequencies
+    qsort(dict_cache->dict1, dict_cache->num1, sizeof(DICTIONARY), compare_frequencies);
+    qsort(dict_cache->dict2, dict_cache->num2, sizeof(DICTIONARY), compare_frequencies);
+
+    // updated pointers to skipthe first deleted part
+    dict_cache->dict1 = &dict_cache->dict1[(int)(thresholdExtreme*dict_cache->num1)];
+    dict_cache->dict2 = &dict_cache->dict2[(int)(thresholdExtreme*dict_cache->num2)];
+
+    // the lengths of dictionaries are updated
+    dict_cache->num1 = (int)((1-2*thresholdExtreme)*counter1);
+    dict_cache->num2 = (int)((1-2*thresholdExtreme)*counter2);
+
     return dict_cache;
+}
+
+int compare_frequencies(const void *a, const void *b){
+    DICTIONARY *dictionary1 = (DICTIONARY*)a;
+    DICTIONARY *dictionary2 = (DICTIONARY*)b;
+    return dictionary1->frequency - dictionary2->frequency;
 }
 
 void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate){
