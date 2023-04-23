@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 // define the data structure (text - class)
 typedef struct data DATA;
@@ -43,10 +44,15 @@ struct nucleotide{
 // define a indivual structure
 typedef struct individual INDIVIDUAL;
 struct individual{
-    NUCLEOTIDE *class1;
-    NUCLEOTIDE *class2;
-    int num;
+    NUCLEOTIDE *nuc_codes;
     float fitness;
+};
+
+// define a population structure
+typedef struct population POPULATION;
+struct population{
+    INDIVIDUAL *individuals;
+    int num;  
 };
 
 // function prototypes
@@ -58,20 +64,22 @@ void print_dictionaries(DICT_CACHE *dict_cache);
 DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float thresholdSame, float thresholdExtreme);
 int compare_frequencies(const void *a, const void *b);
 void genetic_algorithm(DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate);
+INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord);
+void print_individual(INDIVIDUAL *individual, int numWord);
 
 int main(void){
     CACHE *cache;
     DICT_CACHE *dict_cache;
 
-    int numWord, numIndiv;
-    float thresholdSame=0.33, thresholdExtreme=0.10, mutatRate;
+    int numWord=10, numIndiv=4;
+    float thresholdSame=0.33, thresholdExtreme=0.10, mutatRate=0.25;
 
     // reading the file
     cache = read_file("amazon_reviews.csv");
 
     // print the data set
     printf("\n\n.....DATA SET.....\n\n");
-    print_dataSet(cache);
+    //print_dataSet(cache);
     
     // creating dictionaries
     dict_cache = create_dictionary(cache);
@@ -80,7 +88,7 @@ int main(void){
     printf("\n------------------------------------");
     printf("\n------------------------------------");
     printf("\n\n.....DICTIONARIES.....\n\n");
-    print_dictionaries(dict_cache);
+    //print_dictionaries(dict_cache);
 
     // make dictionaries unique
     dict_cache = filter_dicts(dict_cache, thresholdSame, thresholdExtreme);
@@ -89,13 +97,13 @@ int main(void){
     printf("\n------------------------------------");
     printf("\n------------------------------------");
     printf("\n\n.....FLTERED DICTIONARIES.....\n\n");
-    print_dictionaries(dict_cache);
+    //print_dictionaries(dict_cache);
 
     // print the dictionaries
     printf("\n------------------------------------");
     printf("\n------------------------------------");
     printf("\n\n.....GENETIC ALGORITHM.....\n\n");
-    //genetic_algorithm(dict_cache, numWord, numIndiv, mutatRate);
+    genetic_algorithm(dict_cache, numWord, numIndiv, mutatRate);
 
     return 0;
 }
@@ -481,5 +489,113 @@ int compare_frequencies(const void *a, const void *b){
 }
 
 void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate){
+    INDIVIDUAL *individual;
+    POPULATION *population;
 
+    int i, j;
+
+    individual = (INDIVIDUAL*)malloc(sizeof(INDIVIDUAL));
+    if(individual == NULL){
+        printf("ERROR 13: individual cannot be created!");
+        exit(1);
+    }
+
+    population = (POPULATION*)malloc(sizeof(POPULATION));
+    if(population == NULL){
+        printf("ERROR 14: population cannot be created!");
+        exit(1);
+    }
+
+    // for(i=0; i<numIndiv; i++){
+    //     population->individuals = (INDIVIDUAL*)malloc(numIndiv*sizeof(INDIVIDUAL));
+    //     if(population->individuals == NULL){
+    //     printf("ERROR 14: population->individuals cannot be created!");
+    //     exit(1);
+    //     }
+    // }
+
+    for(i=0; i<numIndiv; i++){
+        individual = create_individual(dict_cache, numWord);
+        printf("\nINDIV\n");
+        for(j=0; j<numWord; j++){
+            printf(individual->nuc_codes[j].word);
+            printf("\t");
+            printf("%d", individual->nuc_codes[j].frequency);
+            printf("\n");
+        }
+        population->individuals[i] = *individual;
+    }
+
+    // printf("\nPOPULATION\n");
+    // for(i=0; i<numIndiv; i++){
+    //     individual = &population->individuals[i];
+    //     print_individual(individual, numWord);
+    //     printf("\n");
+    // }
+
+    // printf("\nINDIV\n");
+    // for(i=0; i<numWord; i++){
+    //     printf(individual->nuc_codes[i].word);
+    //     printf("\t");
+    //     printf("%d", individual->nuc_codes[i].frequency);
+    //     printf("\n");
+    // }
+        
+
+}
+
+INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord){
+    NUCLEOTIDE *nuc_codes;
+    INDIVIDUAL *individual;
+
+    int i, j;
+    printf("\nCREATE\n");
+    // nucleotid codes (individual's words number)
+    nuc_codes = (NUCLEOTIDE*)malloc((numWord)*sizeof(NUCLEOTIDE));
+    if(nuc_codes == NULL){
+        printf("ERROR 15: nuc_codes cannot be created!");
+        exit(1);
+    }
+
+    // assign random words to individual
+    srand(time(NULL));
+    for(i=0; i<numWord; i++){
+        // randomly dictionary selection      
+        j = rand() % 2;
+        if(j == 0){
+            // randomly word selection
+            j = rand() % dict_cache->num1;
+            nuc_codes[i].word = dict_cache->dict1[j].word;
+            nuc_codes[i].frequency = dict_cache->dict1[j].frequency;
+        }
+        else{
+            j = rand() % dict_cache->num2;
+            nuc_codes[i].word = dict_cache->dict2[j].word;
+            nuc_codes[i].frequency = dict_cache->dict2[j].frequency;
+        }
+    }
+
+    // define an individual
+    individual = (INDIVIDUAL*)malloc(sizeof(INDIVIDUAL));
+    if(individual == NULL){
+        printf("ERROR 16: individual cannot be created!");
+        exit(1);
+    }
+
+    individual->nuc_codes = nuc_codes;
+    individual->fitness = 0;
+    
+    return individual;
+}
+
+void print_individual(INDIVIDUAL *individual, int numWord){
+    int i;
+
+    printf("\nINDIV\n");
+    for(i=0; i<numWord; i++){
+        printf(individual->nuc_codes[i].word);
+        printf("\t");
+        printf("%d", individual->nuc_codes[i].frequency);
+        printf("\n");
+    }
 }
