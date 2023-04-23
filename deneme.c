@@ -520,9 +520,12 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float 
         population->individuals[i] = *individual;
     }
 
-    printf("\nPOPUYLATION\n");
+    printf("\nPOPULATION\n");
+    printf("----------\n");
     for(i=0; i<numIndiv; i++){
-        print_individual(population->individuals, numWord);
+        printf("[");
+        print_individual(&(population->individuals[i]), numWord);
+        printf("]");
     }
 
 }
@@ -563,21 +566,33 @@ INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord){
         exit(1);
     }
 
+    // assign the nucleotid codes to individual
     individual->nuc_codes = nuc_codes;
     individual->fitness = 0;
-    printf("\nINDV\n");
-    print_individual(individual, numWord);
+
     return individual;
 }
 
 void print_individual(INDIVIDUAL *individual, int numWord){
     int i;
 
-    printf("\nINDIV\n");
     for(i=0; i<numWord; i++){
+        if(i == 0){
+            printf("[");
+        }
+        if(i == (numWord/2)){
+            printf("[");
+        }
         printf(individual->nuc_codes[i].word);
-        printf("\t");
-        printf("%d", individual->nuc_codes[i].frequency);
-        printf("\n");
+        if(i == (numWord/2)-1){
+            printf("], ");
+        }
+        if(i == numWord-1){
+            printf("]");
+        }
+        if(i != (numWord/2)-1 && i != numWord-1){
+            printf(", ");
+        }
     }
+    printf("\n");
 }
