@@ -64,25 +64,26 @@ DICT_CACHE *create_dictionary(CACHE *cache);
 void print_dictionaries(DICT_CACHE *dict_cache);
 DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float thresholdSame, float thresholdExtreme);
 int compare_frequencies(const void *a, const void *b);
-void genetic(CACHE *cache, DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate);
+void genetic(DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate, char *fileName);
 INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord);
 void print_individual(INDIVIDUAL *individual, int numWord);
-void genetic_algorithm(CACHE *cache, POPULATION *population);
-POPULATION *fitness_function(CACHE *cache, POPULATION *population);
+void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, char *fileName);
+POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, char *fileName);
 
 int main(void){
-    CACHE *cache;
+    CACHE *cache, *cache2;
     DICT_CACHE *dict_cache;
 
+    char *fileName = "amazon_reviews.csv";
     int numWord=10, numIndiv=4;
     float thresholdSame=0.33, thresholdExtreme=0.10, mutatRate=0.25;
 
     // reading the file
-    cache = read_file("amazon_reviews.csv");
+    cache = read_file(fileName);
 
     // print the data set
     printf("\n\n.....DATA SET.....\n\n");
-    //print_dataSet(cache);
+    print_dataSet(cache);
     
     // creating dictionaries
     dict_cache = create_dictionary(cache);
@@ -106,7 +107,7 @@ int main(void){
     printf("\n------------------------------------");
     printf("\n------------------------------------");
     printf("\n\n.....GENETIC ALGORITHM.....\n\n");
-    genetic(cache, dict_cache, numWord, numIndiv, mutatRate);
+    genetic(dict_cache, numWord, numIndiv, mutatRate, fileName);
 
     return 0;
 }
@@ -491,7 +492,7 @@ int compare_frequencies(const void *a, const void *b){
     return dictionary1->frequency - dictionary2->frequency;
 }
 
-void genetic(CACHE *cache, DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate){
+void genetic(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate, char *fileName){
     INDIVIDUAL *individual;
     POPULATION *population;
 
@@ -539,7 +540,7 @@ void genetic(CACHE *cache, DICT_CACHE *dict_cache, int numWord, int numIndiv, fl
     }
 
     // start the genetic algorithm optimization
-    genetic_algorithm(cache, population);
+    genetic_algorithm(dict_cache, population, fileName);
 
 }
 
@@ -610,10 +611,15 @@ void print_individual(INDIVIDUAL *individual, int numWord){
     printf("\n");
 }
 
-void genetic_algorithm(CACHE *cache, POPULATION *population){
-    fitness_function(cache, population);
+void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, char *fileName){
+    fitness_function(dict_cache, population, fileName);
 }
 
-POPULATION *fitness_function(CACHE *cache, POPULATION *population){
+POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, char *fileName){
+    CACHE *cache;
+
+    cache = read_file(fileName);
+
+    // TODO: datasetin ilk değeri bozuk
     print_dataSet(cache);
 }
