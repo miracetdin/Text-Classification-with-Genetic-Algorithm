@@ -506,41 +506,24 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float 
         exit(1);
     }
 
-    // for(i=0; i<numIndiv; i++){
-    //     population->individuals = (INDIVIDUAL*)malloc(numIndiv*sizeof(INDIVIDUAL));
-    //     if(population->individuals == NULL){
-    //     printf("ERROR 14: population->individuals cannot be created!");
-    //     exit(1);
-    //     }
-    // }
+    for(i=0; i<numIndiv; i++){
+        population->individuals = (INDIVIDUAL*)malloc(numWord*sizeof(INDIVIDUAL));
+        if(population == NULL){
+            printf("ERROR 14: population->individuals cannot be created!");
+            exit(1);
+        }
+    }
 
+    srand(time(NULL)); 
     for(i=0; i<numIndiv; i++){
         individual = create_individual(dict_cache, numWord);
-        printf("\nINDIV\n");
-        for(j=0; j<numWord; j++){
-            printf(individual->nuc_codes[j].word);
-            printf("\t");
-            printf("%d", individual->nuc_codes[j].frequency);
-            printf("\n");
-        }
         population->individuals[i] = *individual;
     }
 
-    // printf("\nPOPULATION\n");
-    // for(i=0; i<numIndiv; i++){
-    //     individual = &population->individuals[i];
-    //     print_individual(individual, numWord);
-    //     printf("\n");
-    // }
-
-    // printf("\nINDIV\n");
-    // for(i=0; i<numWord; i++){
-    //     printf(individual->nuc_codes[i].word);
-    //     printf("\t");
-    //     printf("%d", individual->nuc_codes[i].frequency);
-    //     printf("\n");
-    // }
-        
+    printf("\nPOPUYLATION\n");
+    for(i=0; i<numIndiv; i++){
+        print_individual(population->individuals, numWord);
+    }
 
 }
 
@@ -549,18 +532,16 @@ INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord){
     INDIVIDUAL *individual;
 
     int i, j;
-    printf("\nCREATE\n");
     // nucleotid codes (individual's words number)
-    nuc_codes = (NUCLEOTIDE*)malloc((numWord)*sizeof(NUCLEOTIDE));
+    nuc_codes = (NUCLEOTIDE*)malloc(numWord*sizeof(NUCLEOTIDE));
     if(nuc_codes == NULL){
         printf("ERROR 15: nuc_codes cannot be created!");
         exit(1);
     }
 
     // assign random words to individual
-    srand(time(NULL));
     for(i=0; i<numWord; i++){
-        // randomly dictionary selection      
+        // randomly dictionary selection     
         j = rand() % 2;
         if(j == 0){
             // randomly word selection
@@ -584,7 +565,8 @@ INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord){
 
     individual->nuc_codes = nuc_codes;
     individual->fitness = 0;
-    
+    printf("\nINDV\n");
+    print_individual(individual, numWord);
     return individual;
 }
 
