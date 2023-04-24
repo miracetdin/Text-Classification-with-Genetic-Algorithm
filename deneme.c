@@ -75,7 +75,7 @@ int main(void){
     DICT_CACHE *dict_cache;
 
     char *fileName = "amazon_reviews.csv";
-    int numWord=10, numIndiv=4;
+    int numWord=20, numIndiv=8;
     float thresholdSame=0.33, thresholdExtreme=0.10, mutatRate=0.25;
     int i;
 
@@ -112,7 +112,7 @@ int main(void){
 
     // print the data set
     printf("\n\n.....DATA SET.....\n\n");
-    print_dataSet(cache);
+    //print_dataSet(cache);
     
     // creating dictionaries
     dict_cache = create_dictionary(cache);
@@ -129,7 +129,7 @@ int main(void){
     // print the dictionaries
     printf("\n------------------------------------");
     printf("\n------------------------------------");
-    printf("\n\n.....FLTERED DICTIONARIES.....\n\n");
+    printf("\n\n.....FILTERED DICTIONARIES.....\n\n");
     //print_dictionaries(dict_cache);
 
     // print the dictionaries
@@ -505,7 +505,7 @@ DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float thresholdSame, float thre
     qsort(dict_cache->dict1, dict_cache->num1, sizeof(DICTIONARY), compare_frequencies);
     qsort(dict_cache->dict2, dict_cache->num2, sizeof(DICTIONARY), compare_frequencies);
 
-    // updated pointers to skipthe first deleted part
+    // updated pointers to skip the first deleted part
     dict_cache->dict1 = &dict_cache->dict1[(int)(thresholdExtreme*dict_cache->num1)];
     dict_cache->dict2 = &dict_cache->dict2[(int)(thresholdExtreme*dict_cache->num2)];
 
@@ -647,5 +647,56 @@ void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, CACHE *ca
 }
 
 POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2){
-    
+    int i, j, k;
+    int counter1=0, counter2=0;
+    char *class;
+    int truePredict;
+
+    for(i=0; i<population->numIndiv; i++){
+        truePredict = 0;
+        for(j=0; j<cache2->num; j++){
+            counter1 = 0;
+            counter2 = 0;
+            for(k=0; k<population->numWord/2; k++){
+                // TODO: anlamsız kelimeller metinde kelime içinde yer alabiliyor
+                // de -> hidden
+                //printf("%s\n", population->individuals[i].nuc_codes[k].word);
+                if(strstr(cache2->dataSet[j].text, population->individuals[i].nuc_codes[k].word)){
+                    counter1++;
+                }
+            }
+            for(k=population->numWord/2; k<population->numWord; k++){
+                if(strstr(cache2->dataSet[j].text, population->individuals[i].nuc_codes[k].word)){
+                    counter2++;
+                }
+            }
+
+            // printf("counter1: %d\n", counter1);
+            // printf("counter2: %d\n", counter2);
+            if(counter1 > counter2){
+                class = dict_cache->dict1->class;
+            }
+            else{
+                class = dict_cache->dict2->class;
+            }
+            if(strcmp(class, cache2->dataSet[j].class) == 0){
+                truePredict++;
+            }
+        }
+        printf("\n indv[%d] fitness: %d\n", i, truePredict);
+        population->individuals[i].fitness = (float)(truePredict) / cache2->num;
+    }
+        
+        // print the population
+        printf("\nPOPULATION\n");
+        printf("----------\n");
+        for(i=0; i<population->numIndiv; i++){
+            printf("Individual %d: \n", i);
+            printf("[");
+            print_individual(&(population->individuals[i]), population->numWord);
+            printf("\n fitness: %f\n", population->individuals[i].fitness);
+            printf("]");
+            printf("\n");
+        }
+ 
 }
