@@ -64,11 +64,11 @@ DICT_CACHE *create_dictionary(CACHE *cache);
 void print_dictionaries(DICT_CACHE *dict_cache);
 DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float thresholdSame, float thresholdExtreme);
 int compare_frequencies(const void *a, const void *b);
-void genetic(DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate, char *fileName);
+void genetic(DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate, CACHE *cache2);
 INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord);
 void print_individual(INDIVIDUAL *individual, int numWord);
-void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, char *fileName);
-POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, char *fileName);
+void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2);
+POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2);
 
 int main(void){
     CACHE *cache, *cache2;
@@ -77,9 +77,38 @@ int main(void){
     char *fileName = "amazon_reviews.csv";
     int numWord=10, numIndiv=4;
     float thresholdSame=0.33, thresholdExtreme=0.10, mutatRate=0.25;
+    int i;
 
     // reading the file
     cache = read_file(fileName);
+
+    // define a cache which for the transfer the text
+    cache2 = (CACHE*)malloc(sizeof(CACHE));
+    if(cache2 == NULL){
+        printf("ERROR 4: cache2 cannot be created!");
+        exit(1);
+    }
+
+    cache2->dataSet = (DATA*)malloc((cache->num)*sizeof(DATA));
+    if(cache2->dataSet == NULL){
+        printf("ERROR 4: cache2->dataSet cannot be created!");
+        exit(1);
+    }
+
+    for(i=0; i<cache->num; i++){
+        cache2->dataSet[i].class = (char*)malloc(cache->length*sizeof(char));
+        cache2->dataSet[i].text = (char*)malloc(cache->length*sizeof(char));
+    }
+
+    // copy the text
+    // cache1 for the tokenization
+    // cache2 for the hold the text
+    cache2->length = cache->length;
+    cache2->num = cache->num;
+    for(i=0; i<cache->num; i++){
+        memcpy(cache2->dataSet[i].class, cache->dataSet[i].class, sizeof(char));
+        memcpy(cache2->dataSet[i].text, cache->dataSet[i].text, sizeof(char)*cache->length);
+    }
 
     // print the data set
     printf("\n\n.....DATA SET.....\n\n");
@@ -107,7 +136,7 @@ int main(void){
     printf("\n------------------------------------");
     printf("\n------------------------------------");
     printf("\n\n.....GENETIC ALGORITHM.....\n\n");
-    genetic(dict_cache, numWord, numIndiv, mutatRate, fileName);
+    genetic(dict_cache, numWord, numIndiv, mutatRate, cache2);
 
     return 0;
 }
@@ -200,6 +229,7 @@ CACHE *read_file(char *fileName){
 
     free(line);
     free(dataSet);
+    fseek(file, 0, SEEK_SET);
     fclose(file);
 
     return cache;
@@ -492,7 +522,7 @@ int compare_frequencies(const void *a, const void *b){
     return dictionary1->frequency - dictionary2->frequency;
 }
 
-void genetic(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate, char *fileName){
+void genetic(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate, CACHE *cache2){
     INDIVIDUAL *individual;
     POPULATION *population;
 
@@ -540,7 +570,7 @@ void genetic(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate,
     }
 
     // start the genetic algorithm optimization
-    genetic_algorithm(dict_cache, population, fileName);
+    genetic_algorithm(dict_cache, population, cache2);
 
 }
 
@@ -611,15 +641,11 @@ void print_individual(INDIVIDUAL *individual, int numWord){
     printf("\n");
 }
 
-void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, char *fileName){
-    fitness_function(dict_cache, population, fileName);
+void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2){
+    fitness_function(dict_cache, population, cache2);
+
 }
 
-POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, char *fileName){
-    CACHE *cache;
-
-    cache = read_file(fileName);
-
-    // TODO: datasetin ilk değeri bozuk
-    print_dataSet(cache);
+POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2){
+    
 }
