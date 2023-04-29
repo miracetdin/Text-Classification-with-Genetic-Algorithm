@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 // define the data structure (text - class)
 typedef struct data DATA;
@@ -56,6 +57,16 @@ struct population{
     int numWord;
 };
 
+// define an order structure
+typedef struct order ORDER;
+struct order{
+    int index;
+    float fitness;
+    float chance;
+    int intervalStart;
+    int intervalEnd;
+};
+
 // function prototypes
 FILE *open_file(char *fileName);
 CACHE *read_file(char *fileName);
@@ -69,13 +80,15 @@ INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord);
 void print_individual(INDIVIDUAL *individual, int numWord);
 void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2);
 POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2);
+INDIVIDUAL *random_selection(POPULATION *population);
+int compare_fitness(const void *a, const void *b);
 
 int main(void){
     CACHE *cache, *cache2;
     DICT_CACHE *dict_cache;
 
     char *fileName = "amazon_reviews.csv";
-    int numWord=20, numIndiv=8;
+    int numWord=10, numIndiv=8;
     float thresholdSame=0.33, thresholdExtreme=0.10, mutatRate=0.25;
     int i;
 
@@ -642,8 +655,13 @@ void print_individual(INDIVIDUAL *individual, int numWord){
 }
 
 void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2){
-    fitness_function(dict_cache, population, cache2);
+    INDIVIDUAL *selected_indiv;
 
+    fitness_function(dict_cache, population, cache2);
+    
+    selected_indiv =  random_selection(population);
+
+    print_individual(selected_indiv, population->numWord);
 }
 
 POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2){
@@ -699,4 +717,65 @@ POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CAC
             printf("\n");
         }
  
+}
+
+INDIVIDUAL *random_selection(POPULATION *population){
+    ORDER *order;
+
+    int i, total, rand_value, selected;
+
+    order = (ORDER*)malloc(population->numIndiv*sizeof(ORDER));
+    if(order == NULL){
+        printf("ERROR 5: order cannot be created!");
+        exit(1);
+    }
+
+    for(i=0; i<population->numIndiv; i++){
+        order[i].index = i;
+        order[i].fitness = population->individuals[i].fitness;
+    }
+
+    qsort(order, population->numIndiv, sizeof(ORDER), compare_fitness);
+
+    total = (population->numIndiv) * (population->numIndiv+1) / 2;
+    printf("\ntotal: %d\n", total);
+    for(i=0; i<population->numIndiv; i++){
+        order[i].chance = ((float)(i+1)/total) * 100;
+    }
+
+    order[0].intervalStart = 0;
+    order[0].intervalEnd = ceil(order[0].chance);
+    for(i=1; i<population->numIndiv; i++){
+        order[i].intervalStart = ceil(order[i-1].intervalEnd);
+        order[i].intervalEnd = ceil(order[i].intervalStart + order[i].chance);
+    }
+
+
+    printf("\nORDER\n");
+    for(i=0; i<population->numIndiv; i++){
+        printf("order: %d\n", order[i].index);
+        printf( "fitness: %f\n", order[i].fitness);
+        printf( "chance: %.f\n", ceil(order[i].chance));
+        printf( "start: %d\n", order[i].intervalStart);
+        printf( "end: %d\n", order[i].intervalEnd);
+        printf("\n");
+    }
+
+    srand(time(NULL));
+    rand_value = rand() % 100;
+
+    for(i=0; i<population->numIndiv; i++){
+        if((order[i].intervalStart < rand_value) && (rand_value < order[i].intervalEnd)){
+            selected = i;
+            printf("\nselected: %d\n", i);
+            return &(population->individuals[i]);
+        }
+    }
+
+}
+
+int compare_fitness(const void *a, const void *b){
+    ORDER *order1 = (ORDER*)a;
+    ORDER *order2 = (ORDER*)b;
+    return (order1->fitness - order2->fitness) * 1000000; 
 }
