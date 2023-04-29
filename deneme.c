@@ -76,10 +76,9 @@ DICT_CACHE *create_dictionary(CACHE *cache);
 void print_dictionaries(DICT_CACHE *dict_cache);
 DICT_CACHE *filter_dicts(DICT_CACHE *dict_cache, float thresholdSame, float thresholdExtreme);
 int compare_frequencies(const void *a, const void *b);
-void genetic(DICT_CACHE * dict_cache, int numWord, int numIndiv, float mutatRate, CACHE *cache2);
+void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate, CACHE *cache2);
 INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord);
 void print_individual(INDIVIDUAL *individual, int numWord);
-void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2);
 POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2);
 INDIVIDUAL *random_selection(POPULATION *population);
 int compare_fitness(const void *a, const void *b);
@@ -103,9 +102,7 @@ int main(void){
 
     // print the data set
     printf("\n\n.....DATA SET.....\n\n");
-    print_dataSet(cache);
-    printf("\n-------------------------------------------------------\n");
-    print_dataSet(cache2);
+    //print_dataSet(cache);
     
     // creating dictionaries
     dict_cache = create_dictionary(cache);
@@ -129,7 +126,7 @@ int main(void){
     printf("\n------------------------------------");
     printf("\n------------------------------------");
     printf("\n\n.....GENETIC ALGORITHM.....\n\n");
-    //genetic(dict_cache, numWord, numIndiv, mutatRate, cache2);
+    genetic_algorithm(dict_cache, numWord, numIndiv, mutatRate, cache2);
 
     return 0;
 }
@@ -549,7 +546,8 @@ int compare_frequencies(const void *a, const void *b){
     return dictionary1->frequency - dictionary2->frequency;
 }
 
-void genetic(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate, CACHE *cache2){
+void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate, CACHE *cache2){
+    INDIVIDUAL *selected_indiv1, *selected_indiv2, *new_indiv;
     INDIVIDUAL *individual;
     POPULATION *population;
 
@@ -596,9 +594,19 @@ void genetic(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate,
     //     printf("\n");
     // }
 
-    // start the genetic algorithm optimization
-    genetic_algorithm(dict_cache, population, cache2);
+    fitness_function(dict_cache, population, cache2);
+    
+    // TODO: random seçme işlemi fonk dışına alınırsa tek seferde çalışır
+    printf("\n--------------------------------------------------------\n");
+    printf("\nPARENTS\n");
+    selected_indiv1 =  random_selection(population);
+    print_individual(selected_indiv1, population->numWord);
+    selected_indiv2 =  random_selection(population);
+    print_individual(selected_indiv2, population->numWord);
 
+    printf("\n\nCOCUK\n");
+    new_indiv = reproduce(dict_cache, population, selected_indiv1, selected_indiv2, population->numWord);
+    print_individual(new_indiv, population->numWord);
 }
 
 INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord){
@@ -665,25 +673,7 @@ void print_individual(INDIVIDUAL *individual, int numWord){
             printf(", ");
         }
     }
-    printf("\n");
-}
-
-void genetic_algorithm(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2){
-    INDIVIDUAL *selected_indiv1, *selected_indiv2, *new_indiv;
-
-    fitness_function(dict_cache, population, cache2);
-    
-    // TODO: random seçme işlemi fonk dışına alınırsa tek seferde çalışır
-    printf("\n--------------------------------------------------------\n");
-    printf("\nPARENTS\n");
-    selected_indiv1 =  random_selection(population);
-    print_individual(selected_indiv1, population->numWord);
-    selected_indiv2 =  random_selection(population);
-    print_individual(selected_indiv2, population->numWord);
-
-    printf("\nCOCUK\n");
-    new_indiv = reproduce(dict_cache, population, selected_indiv1, selected_indiv2, population->numWord);
-    print_individual(new_indiv, population->numWord);
+    // printf("\n");
 }
 
 POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2){
@@ -734,8 +724,8 @@ POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CAC
             printf("Individual %d: \n", i);
             printf("[");
             print_individual(&(population->individuals[i]), population->numWord);
-            printf("\n fitness: %f\n", population->individuals[i].fitness);
             printf("]");
+            printf("\nfitness: %f\n", population->individuals[i].fitness);
             printf("\n");
         }
  
@@ -819,7 +809,7 @@ INDIVIDUAL *reproduce(DICT_CACHE *dict_cache, POPULATION *population, INDIVIDUAL
 
     // crossover with random ratio
     rand_value = rand() % numWord/2;
-    printf("i: %d\n", rand_value);
+    printf("\ni: %d\n", rand_value);
     if(rand_value != 0){
         for(i=rand_value; i<numWord/2; i++){
             strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
@@ -835,6 +825,6 @@ INDIVIDUAL *reproduce(DICT_CACHE *dict_cache, POPULATION *population, INDIVIDUAL
     }
 
 
-    // printf("\ncrossover yapildi: \n");
+    printf("crossover yapildi: \n");
     print_individual(child, numWord);
 }
