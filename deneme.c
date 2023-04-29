@@ -36,13 +36,14 @@ struct dict_cache{
     int num2;
 };
 
+// define a nucleotide (word list) structure
 typedef struct nucleotide NUCLEOTIDE;
 struct nucleotide{
     char *word;
     int frequency;
 };
 
-// define a indivual structure
+// define an indivual structure
 typedef struct individual INDIVIDUAL;
 struct individual{
     NUCLEOTIDE *nuc_codes;
@@ -80,7 +81,7 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float 
 INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord);
 void print_individual(INDIVIDUAL *individual, int numWord);
 POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2);
-INDIVIDUAL *random_selection(POPULATION *population);
+INDIVIDUAL *random_selection(ORDER *order, POPULATION *population);
 int compare_fitness(const void *a, const void *b);
 INDIVIDUAL *reproduce(DICT_CACHE *dict_cache, POPULATION *population, INDIVIDUAL *parent1, INDIVIDUAL *parent2, int numWord);
 
@@ -122,7 +123,7 @@ int main(void){
     printf("\n\n.....FILTERED DICTIONARIES.....\n\n");
     //print_dictionaries(dict_cache);
 
-    // print the dictionaries
+    // genetic algorithm steps
     printf("\n------------------------------------");
     printf("\n------------------------------------");
     printf("\n\n.....GENETIC ALGORITHM.....\n\n");
@@ -196,7 +197,7 @@ CACHE *read_file(char *fileName){
     while(!feof(file)){
         fgets(line, length, file);
         
-        //read the class
+        // read the class
         token = strtok(line, ",");
         strcpy(dataSet[i].class, token);
 
@@ -213,6 +214,7 @@ CACHE *read_file(char *fileName){
         exit(1);
     }
 
+    // cache holds the csv file content
     cache->dataSet = dataSet;
     cache->num = lines;
     cache->length = length;
@@ -262,7 +264,7 @@ CACHE *copy_cache(CACHE *cache){
 void print_dataSet(CACHE *cache){
     int i = 0;
     
-    printf("Data Set Info:\n");
+    printf("\nData Set Info:\n");
     printf("Number of data (lines): %d\n", cache->num);
     printf("Max length of lines: %d\n\n", cache->length);
     printf("Index\tClass\tText\n");
@@ -287,6 +289,7 @@ DICT_CACHE *create_dictionary(CACHE *cache){
     char *token;
     int counter1, counter2 = 0;
     
+    // define two dictionaries' pointers
     dictionary1 = (DICTIONARY*)malloc(1000*sizeof(DICTIONARY));
     if(dictionary1 == NULL){
         printf("ERROR 5: dictionary 1 cannot be created!");
@@ -304,7 +307,7 @@ DICT_CACHE *create_dictionary(CACHE *cache){
         exit(1);
     }
 
-    // assign the classes from data set
+    // assign the class1 from the first data of data set
     class1 = cache->dataSet[0].class;
 
     // assign the words to dictionaries
@@ -329,7 +332,6 @@ DICT_CACHE *create_dictionary(CACHE *cache){
                     // if the word is not in the dictionary
                     if(same == 0){
                         counter1++;
-                        // TODO: realloc return  null
                         dictionary1 = (DICTIONARY*)realloc(dictionary1, (counter1+1)*sizeof(DICTIONARY));
                         dictionary1[counter1].word = token;
                         dictionary1[counter1].class = cache->dataSet[i].class;
@@ -342,7 +344,6 @@ DICT_CACHE *create_dictionary(CACHE *cache){
                 // if the dictionary is not empty
                 else{
                     counter1++;
-                    // TODO: realloc return  null
                     dictionary1 = (DICTIONARY*)realloc(dictionary1, (counter1+1)*sizeof(DICTIONARY));
                     dictionary1[counter1].word = token;
                     dictionary1[counter1].class = cache->dataSet[i].class;
@@ -365,7 +366,6 @@ DICT_CACHE *create_dictionary(CACHE *cache){
                     }
                     if(same == 0){
                         counter2++;
-                        // TODO: realloc return  null
                         dictionary2 = (DICTIONARY*)realloc(dictionary2, (counter2+1)*sizeof(DICTIONARY));
                         dictionary2[counter2].word = token;
                         dictionary2[counter2].class = cache->dataSet[i].class;
@@ -377,7 +377,6 @@ DICT_CACHE *create_dictionary(CACHE *cache){
                 }
                 else{
                     counter2++;
-                    // TODO: realloc return  null
                     dictionary2 = (DICTIONARY*)realloc(dictionary2, (counter2+1)*sizeof(DICTIONARY));
                     dictionary2[counter2].word = token;
                     dictionary2[counter2].class = cache->dataSet[i].class;
@@ -394,6 +393,7 @@ DICT_CACHE *create_dictionary(CACHE *cache){
         exit(1);
     }
     
+    // dictionary cache points to dictionaries
     dict_cache->dict1 = dictionary1;
     dict_cache->num1 = counter1;
     dict_cache->dict2 = dictionary2;
@@ -547,11 +547,17 @@ int compare_frequencies(const void *a, const void *b){
 }
 
 void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float mutatRate, CACHE *cache2){
-    INDIVIDUAL *selected_indiv1, *selected_indiv2, *new_indiv;
     INDIVIDUAL *individual;
     POPULATION *population;
+    INDIVIDUAL *selected_indiv1, *selected_indiv2, *new_indiv;
+    ORDER *order;
 
-    int i, j;
+    int i, j, total;
+
+    //--------------------------
+    // 1. Population Creating
+    //--------------------------
+
     // define the pointers
     individual = (INDIVIDUAL*)malloc(sizeof(INDIVIDUAL));
     if(individual == NULL){
@@ -584,27 +590,78 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, float 
     population->numWord = numWord;
 
     // print the population
-    // printf("\nPOPULATION\n");
-    // printf("----------\n");
-    // for(i=0; i<population->numIndiv; i++){
-    //     printf("Individual %d: \n", i);
-    //     printf("[");
-    //     print_individual(&(population->individuals[i]), population->numWord);
-    //     printf("]");
-    //     printf("\n");
-    // }
+    printf("\nPOPULATION\n");
+    printf("----------\n");
+    for(i=0; i<population->numIndiv; i++){
+        printf("Individual %d: \n", i);
+        printf("[");
+        print_individual(&(population->individuals[i]), population->numWord);
+        printf("]");
+        printf("\nfitness: %f\n", population->individuals[i].fitness);
+        printf("\n");
+    }
+
+    //--------------------------
+    // 2. Compute the Fitnees Values
+    //--------------------------
 
     fitness_function(dict_cache, population, cache2);
+
+    //--------------------------
+    // 3. Random Selection
+    //--------------------------
+
+    // define an order pointer
+    order = (ORDER*)malloc(population->numIndiv*sizeof(ORDER));
+    if(order == NULL){
+        printf("ERROR 5: order cannot be created!");
+        exit(1);
+    }
+
+    for(i=0; i<population->numIndiv; i++){
+        order[i].index = i;
+        order[i].fitness = population->individuals[i].fitness;
+    }
+
+    // sorting the individuals by their fitness values
+    qsort(order, population->numIndiv, sizeof(ORDER), compare_fitness);
+
+    // compute the chance calue for each individuals
+    total = (population->numIndiv) * (population->numIndiv+1) / 2;
+    for(i=0; i<population->numIndiv; i++){
+        order[i].chance = ((float)(i+1)/total) * 100;
+    }
+
+    // compute the chance-interval values
+    order[0].intervalStart = 0;
+    order[0].intervalEnd = ceil(order[0].chance);
+    for(i=1; i<population->numIndiv; i++){
+        order[i].intervalStart = ceil(order[i-1].intervalEnd);
+        order[i].intervalEnd = ceil(order[i].intervalStart + order[i].chance);
+    }
+
+    // print the order
+    printf("\nORDER\n");
+    for(i=0; i<population->numIndiv; i++){
+        printf("order: %d\n", order[i].index);
+        printf( "fitness: %f\n", order[i].fitness);
+        printf( "chance: %.f\n", ceil(order[i].chance));
+        printf( "start: %d\n", order[i].intervalStart);
+        printf( "end: %d\n", order[i].intervalEnd);
+        printf("\n");
+    }
     
-    // TODO: random seçme işlemi fonk dışına alınırsa tek seferde çalışır
+    // Random Selection for the parents
     printf("\n--------------------------------------------------------\n");
     printf("\nPARENTS\n");
-    selected_indiv1 =  random_selection(population);
+    selected_indiv1 =  random_selection(order, population);
     print_individual(selected_indiv1, population->numWord);
-    selected_indiv2 =  random_selection(population);
+    printf("\n");
+    selected_indiv2 =  random_selection(order, population);
     print_individual(selected_indiv2, population->numWord);
 
-    printf("\n\nCOCUK\n");
+    // Creating the child from the parents by crossover operation
+    printf("\n\nCHILD\n\n");
     new_indiv = reproduce(dict_cache, population, selected_indiv1, selected_indiv2, population->numWord);
     print_individual(new_indiv, population->numWord);
 }
@@ -673,7 +730,6 @@ void print_individual(INDIVIDUAL *individual, int numWord){
             printf(", ");
         }
     }
-    // printf("\n");
 }
 
 POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CACHE *cache2){
@@ -682,107 +738,61 @@ POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CAC
     char *class;
     int truePredict;
 
+    // compute every individual's score
     for(i=0; i<population->numIndiv; i++){
         truePredict = 0;
+        // control the all the texts in dataset
         for(j=0; j<cache2->num; j++){
             counter1 = 0;
             counter2 = 0;
+            // control for class 1
             for(k=0; k<population->numWord/2; k++){
                 // TODO: anlamsız kelimeller metinde kelime içinde yer alabiliyor
                 // de -> hidden
-                //printf("%s\n", population->individuals[i].nuc_codes[k].word);
+                // if the word places in the text, increment the score 
                 if(strstr(cache2->dataSet[j].text, population->individuals[i].nuc_codes[k].word)){
                     counter1++;
                 }
             }
+            // control for class 2
             for(k=population->numWord/2; k<population->numWord; k++){
                 if(strstr(cache2->dataSet[j].text, population->individuals[i].nuc_codes[k].word)){
                     counter2++;
                 }
             }
 
-            // printf("counter1: %d\n", counter1);
-            // printf("counter2: %d\n", counter2);
+            // if the class 1 has more points, prediction is class 1
             if(counter1 > counter2){
                 class = dict_cache->dict1->class;
             }
             else{
                 class = dict_cache->dict2->class;
             }
+
+            // control whatever prediction is true or false 
             if(strcmp(class, cache2->dataSet[j].class) == 0){
                 truePredict++;
             }
         }
-        // printf("\n indv[%d] fitness: %d\n", i, truePredict);
+
+        // compute the fitness value (success rate)
         population->individuals[i].fitness = (float)(truePredict) / cache2->num;
     }
-        
-        // print the population
-        printf("\nPOPULATION\n");
-        printf("----------\n");
-        for(i=0; i<population->numIndiv; i++){
-            printf("Individual %d: \n", i);
-            printf("[");
-            print_individual(&(population->individuals[i]), population->numWord);
-            printf("]");
-            printf("\nfitness: %f\n", population->individuals[i].fitness);
-            printf("\n");
-        }
  
 }
 
-INDIVIDUAL *random_selection(POPULATION *population){
-    ORDER *order;
+INDIVIDUAL *random_selection(ORDER *order, POPULATION *population){
+    int i, rand_value, selected;
 
-    int i, total, rand_value, selected;
-
-    order = (ORDER*)malloc(population->numIndiv*sizeof(ORDER));
-    if(order == NULL){
-        printf("ERROR 5: order cannot be created!");
-        exit(1);
-    }
-
-    for(i=0; i<population->numIndiv; i++){
-        order[i].index = i;
-        order[i].fitness = population->individuals[i].fitness;
-    }
-
-    qsort(order, population->numIndiv, sizeof(ORDER), compare_fitness);
-
-    total = (population->numIndiv) * (population->numIndiv+1) / 2;
-    printf("\ntotal: %d\n", total);
-    for(i=0; i<population->numIndiv; i++){
-        order[i].chance = ((float)(i+1)/total) * 100;
-    }
-
-    order[0].intervalStart = 0;
-    order[0].intervalEnd = ceil(order[0].chance);
-    for(i=1; i<population->numIndiv; i++){
-        order[i].intervalStart = ceil(order[i-1].intervalEnd);
-        order[i].intervalEnd = ceil(order[i].intervalStart + order[i].chance);
-    }
-
-    // TODO: order, selected dışına alınabilir
-    printf("\nORDER\n");
-    for(i=0; i<population->numIndiv; i++){
-        printf("order: %d\n", order[i].index);
-        printf( "fitness: %f\n", order[i].fitness);
-        printf( "chance: %.f\n", ceil(order[i].chance));
-        printf( "start: %d\n", order[i].intervalStart);
-        printf( "end: %d\n", order[i].intervalEnd);
-        printf("\n");
-    }
-
-    printf("\nSelected:\n");
+    // select an individual randomly to be a parent
     rand_value = rand() % 100;
     for(i=0; i<population->numIndiv; i++){
         if((order[i].intervalStart <= rand_value) && (rand_value < order[i].intervalEnd)){
             selected = i;
-            printf("\nselected: %d\n", i);
+            printf("\nselected individual: %d\n", order[i].index);
             return &(population->individuals[order[i].index]);
         }
     }
-
 }
 
 int compare_fitness(const void *a, const void *b){
@@ -796,35 +806,33 @@ INDIVIDUAL *reproduce(DICT_CACHE *dict_cache, POPULATION *population, INDIVIDUAL
 
     int i, rand_value;
 
+    // create a child with random nucleotide codes
     child = create_individual(dict_cache, numWord);
 
+    // copy the parent1 codes to child
     for(i=0; i<numWord; i++){
         strcpy(child->nuc_codes[i].word, parent1->nuc_codes[i].word);
         child->nuc_codes[i].frequency = parent1->nuc_codes[i].frequency;
         child->fitness = parent1->fitness;
     }
 
-    // printf("\ncocuk yaratildi: \n");
-    print_individual(child, numWord);
-
-    // crossover with random ratio
+    // crossover with random ratio for class 1
     rand_value = rand() % numWord/2;
-    printf("\ni: %d\n", rand_value);
     if(rand_value != 0){
+        // copy parent 2's nucleotide codes to child codes 
+        // start index: rand value
         for(i=rand_value; i<numWord/2; i++){
             strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
         }
     }
+    // crossover for class 2
     rand_value = rand() % numWord/2;
     rand_value += numWord/2;
-    printf("i: %d\n", rand_value);
     if(rand_value != numWord/2){
         for(i=rand_value; i<numWord; i++){
             strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
         }
     }
 
-
-    printf("crossover yapildi: \n");
     print_individual(child, numWord);
 }
