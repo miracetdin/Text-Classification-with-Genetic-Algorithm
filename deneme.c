@@ -70,6 +70,7 @@ struct order{
 // function prototypes
 FILE *open_file(char *fileName);
 CACHE *read_file(char *fileName);
+CACHE *copy_cache(CACHE *cache);
 void print_dataSet(CACHE *cache);
 DICT_CACHE *create_dictionary(CACHE *cache);
 void print_dictionaries(DICT_CACHE *dict_cache);
@@ -95,39 +96,16 @@ int main(void){
 
     // reading the file
     cache = read_file(fileName);
-
-    // TODO: copy işlemi ayrı fonk a taşınabilir
-    // define a cache which for the transfer the text
-    cache2 = (CACHE*)malloc(sizeof(CACHE));
-    if(cache2 == NULL){
-        printf("ERROR 4: cache2 cannot be created!");
-        exit(1);
-    }
-
-    cache2->dataSet = (DATA*)malloc((cache->num)*sizeof(DATA));
-    if(cache2->dataSet == NULL){
-        printf("ERROR 4: cache2->dataSet cannot be created!");
-        exit(1);
-    }
-
-    for(i=0; i<cache->num; i++){
-        cache2->dataSet[i].class = (char*)malloc(cache->length*sizeof(char));
-        cache2->dataSet[i].text = (char*)malloc(cache->length*sizeof(char));
-    }
-
-    // copy the text
+    // copy the cache
     // cache1 for the tokenization
     // cache2 for the hold the text
-    cache2->length = cache->length;
-    cache2->num = cache->num;
-    for(i=0; i<cache->num; i++){
-        memcpy(cache2->dataSet[i].class, cache->dataSet[i].class, sizeof(char));
-        memcpy(cache2->dataSet[i].text, cache->dataSet[i].text, sizeof(char)*cache->length);
-    }
+    cache2 = copy_cache(cache);
 
     // print the data set
     printf("\n\n.....DATA SET.....\n\n");
-    //print_dataSet(cache);
+    print_dataSet(cache);
+    printf("\n-------------------------------------------------------\n");
+    print_dataSet(cache2);
     
     // creating dictionaries
     dict_cache = create_dictionary(cache);
@@ -151,7 +129,7 @@ int main(void){
     printf("\n------------------------------------");
     printf("\n------------------------------------");
     printf("\n\n.....GENETIC ALGORITHM.....\n\n");
-    genetic(dict_cache, numWord, numIndiv, mutatRate, cache2);
+    //genetic(dict_cache, numWord, numIndiv, mutatRate, cache2);
 
     return 0;
 }
@@ -249,6 +227,40 @@ CACHE *read_file(char *fileName){
 
     return cache;
 }   
+
+CACHE *copy_cache(CACHE *cache){
+    CACHE *cache2;
+
+    int i;
+
+    // define a cache which for the transfer the text
+    cache2 = (CACHE*)malloc(sizeof(CACHE));
+    if(cache2 == NULL){
+        printf("ERROR 4: cache2 cannot be created!");
+        exit(1);
+    }
+
+    cache2->dataSet = (DATA*)malloc((cache->num)*sizeof(DATA));
+    if(cache2->dataSet == NULL){
+        printf("ERROR 4: cache2->dataSet cannot be created!");
+        exit(1);
+    }
+
+    for(i=0; i<cache->num; i++){
+        cache2->dataSet[i].class = (char*)malloc(cache->length*sizeof(char));
+        cache2->dataSet[i].text = (char*)malloc(cache->length*sizeof(char));
+    }
+
+    // copy the text
+    cache2->length = cache->length;
+    cache2->num = cache->num;
+    for(i=0; i<cache->num; i++){
+        memcpy(cache2->dataSet[i].class, cache->dataSet[i].class, sizeof(char));
+        memcpy(cache2->dataSet[i].text, cache->dataSet[i].text, sizeof(char)*cache->length);
+    }
+
+    return cache2;
+}
 
 void print_dataSet(CACHE *cache){
     int i = 0;
