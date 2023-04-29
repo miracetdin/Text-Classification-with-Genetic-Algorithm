@@ -772,7 +772,7 @@ INDIVIDUAL *random_selection(POPULATION *population){
     printf("\nSelected:\n");
     rand_value = rand() % 100;
     for(i=0; i<population->numIndiv; i++){
-        if((order[i].intervalStart < rand_value) && (rand_value < order[i].intervalEnd)){
+        if((order[i].intervalStart <= rand_value) && (rand_value < order[i].intervalEnd)){
             selected = i;
             printf("\nselected: %d\n", i);
             return &(population->individuals[i]);
@@ -814,7 +814,7 @@ INDIVIDUAL *reproduce(DICT_CACHE *dict_cache, POPULATION *population, INDIVIDUAL
     rand_value = rand() % numWord/2;
     rand_value += numWord/2;
     printf("i: %d\n", rand_value);
-    if(rand_value != 0 && rand_value != (numWord/2)-1){
+    if(rand_value != numWord/2 && rand_value != numWord-1){
         for(i=rand_value; i<numWord; i++){
             strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
         }
