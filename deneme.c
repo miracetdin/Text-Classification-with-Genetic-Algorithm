@@ -83,6 +83,7 @@ POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CAC
 INDIVIDUAL *random_selection(POPULATION *population);
 int compare_fitness(const void *a, const void *b);
 INDIVIDUAL *reproduce(DICT_CACHE *dict_cache, POPULATION *population, INDIVIDUAL *parent1, INDIVIDUAL *parent2, int numWord);
+
 int main(void){
     CACHE *cache, *cache2;
     DICT_CACHE *dict_cache;
@@ -95,6 +96,7 @@ int main(void){
     // reading the file
     cache = read_file(fileName);
 
+    // TODO: copy işlemi ayrı fonk a taşınabilir
     // define a cache which for the transfer the text
     cache2 = (CACHE*)malloc(sizeof(CACHE));
     if(cache2 == NULL){
@@ -746,7 +748,7 @@ INDIVIDUAL *random_selection(POPULATION *population){
     qsort(order, population->numIndiv, sizeof(ORDER), compare_fitness);
 
     total = (population->numIndiv) * (population->numIndiv+1) / 2;
-    // printf("\ntotal: %d\n", total);
+    printf("\ntotal: %d\n", total);
     for(i=0; i<population->numIndiv; i++){
         order[i].chance = ((float)(i+1)/total) * 100;
     }
@@ -758,16 +760,16 @@ INDIVIDUAL *random_selection(POPULATION *population){
         order[i].intervalEnd = ceil(order[i].intervalStart + order[i].chance);
     }
 
-
-    // printf("\nORDER\n");
-    // for(i=0; i<population->numIndiv; i++){
-    //     printf("order: %d\n", order[i].index);
-    //     printf( "fitness: %f\n", order[i].fitness);
-    //     printf( "chance: %.f\n", ceil(order[i].chance));
-    //     printf( "start: %d\n", order[i].intervalStart);
-    //     printf( "end: %d\n", order[i].intervalEnd);
-    //     printf("\n");
-    // }
+    // TODO: order, selected dışına alınabilir
+    printf("\nORDER\n");
+    for(i=0; i<population->numIndiv; i++){
+        printf("order: %d\n", order[i].index);
+        printf( "fitness: %f\n", order[i].fitness);
+        printf( "chance: %.f\n", ceil(order[i].chance));
+        printf( "start: %d\n", order[i].intervalStart);
+        printf( "end: %d\n", order[i].intervalEnd);
+        printf("\n");
+    }
 
     printf("\nSelected:\n");
     rand_value = rand() % 100;
@@ -775,7 +777,7 @@ INDIVIDUAL *random_selection(POPULATION *population){
         if((order[i].intervalStart <= rand_value) && (rand_value < order[i].intervalEnd)){
             selected = i;
             printf("\nselected: %d\n", i);
-            return &(population->individuals[i]);
+            return &(population->individuals[order[i].index]);
         }
     }
 
@@ -806,7 +808,7 @@ INDIVIDUAL *reproduce(DICT_CACHE *dict_cache, POPULATION *population, INDIVIDUAL
     // crossover with random ratio
     rand_value = rand() % numWord/2;
     printf("i: %d\n", rand_value);
-    if(rand_value != 0 && rand_value != (numWord/2)-1){
+    if(rand_value != 0){
         for(i=rand_value; i<numWord/2; i++){
             strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
         }
@@ -814,7 +816,7 @@ INDIVIDUAL *reproduce(DICT_CACHE *dict_cache, POPULATION *population, INDIVIDUAL
     rand_value = rand() % numWord/2;
     rand_value += numWord/2;
     printf("i: %d\n", rand_value);
-    if(rand_value != numWord/2 && rand_value != numWord-1){
+    if(rand_value != numWord/2){
         for(i=rand_value; i<numWord; i++){
             strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
         }
