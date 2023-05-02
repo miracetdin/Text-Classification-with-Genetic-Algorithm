@@ -92,7 +92,7 @@ int main(void){
     DICT_CACHE *dict_cache;
 
     char *fileName = "amazon_reviews.csv";
-    int numWord=10, numIndiv=4;
+    int numWord=6, numIndiv=10;
     float thresholdSame=0.33, thresholdExtreme=0.10;
     int mut_coefficient = 2;
     int i;
@@ -148,7 +148,6 @@ FILE *open_file(char *fileName){
 
 CACHE *read_file(char *fileName){
     CACHE *cache;
-    DATA data;
     FILE *file;
     DATA *dataSet;
 
@@ -221,11 +220,6 @@ CACHE *read_file(char *fileName){
     cache->dataSet = dataSet;
     cache->num = lines;
     cache->length = length;
-
-    free(line);
-    free(dataSet);
-    fseek(file, 0, SEEK_SET);
-    fclose(file);
 
     return cache;
 }   
@@ -402,6 +396,7 @@ DICT_CACHE *create_dictionary(CACHE *cache){
     dict_cache->dict2 = dictionary2;
     dict_cache->num2 = counter2;
 
+
     return dict_cache;
 }
 
@@ -564,20 +559,20 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, int mu
     //--------------------------
 
     // define the pointers
-    individual = (INDIVIDUAL*)malloc(sizeof(INDIVIDUAL));
+    individual = (INDIVIDUAL*)calloc(1, sizeof(INDIVIDUAL));
     if(individual == NULL){
         printf("ERROR 13: individual cannot be created!");
         exit(1);
     }
 
-    population = (POPULATION*)malloc(sizeof(POPULATION));
+    population = (POPULATION*)calloc(1, sizeof(POPULATION));
     if(population == NULL){
         printf("ERROR 14: population cannot be created!");
         exit(1);
     }
 
     for(i=0; i<numIndiv; i++){
-        population->individuals = (INDIVIDUAL*)malloc(numWord*sizeof(INDIVIDUAL));
+        population->individuals = (INDIVIDUAL*)calloc(numWord, sizeof(INDIVIDUAL));
         if(population == NULL){
             printf("ERROR 14: population->individuals cannot be created!");
             exit(1);
@@ -594,6 +589,8 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, int mu
     population->numIndiv = numIndiv;
     population->numWord = numWord;
 
+    fitness_function(dict_cache, population, cache2);
+
     // print the population
     printf("\nPOPULATION\n");
     printf("----------\n");
@@ -606,8 +603,6 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, int mu
         printf("\n");
     }
 
-    fitness_function(dict_cache, population, cache2);
-
 
     //--------------------------
     //--------------------------
@@ -617,21 +612,21 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, int mu
         //--------------------------
 
         // define the pointers
-        new_individual = (INDIVIDUAL*)malloc(sizeof(INDIVIDUAL));
+        new_individual = (INDIVIDUAL*)calloc(1, sizeof(INDIVIDUAL));
         if(new_individual == NULL){
             printf("ERROR 13: individual cannot be created!");
             exit(1);
         }
 
-        new_population = (POPULATION*)malloc(sizeof(POPULATION));
+        new_population = (POPULATION*)calloc(1, sizeof(POPULATION));
         if(new_population == NULL){
             printf("ERROR 14: population cannot be created!");
             exit(1);
         }
 
         for(i=0; i<numIndiv; i++){
-            new_population->individuals = (INDIVIDUAL*)malloc(numWord*sizeof(INDIVIDUAL));
-            if(new_population == NULL){
+            new_population->individuals = (INDIVIDUAL*)calloc(numWord, sizeof(INDIVIDUAL));
+            if(new_population->individuals == NULL){
                 printf("ERROR 14: population->individuals cannot be created!");
                 exit(1);
             }
@@ -664,25 +659,25 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, int mu
 
         fitness_function(dict_cache, new_population, cache2);
 
-    //--------------------------
-    //--------------------------
-    while((don < 400)){
-        printf("\ndon: %d\n", don);
-        don++;
-
-        
-        for(n=0; n<population->numIndiv; n++){
-            
-            //--------------------------
-            // 3. Random Selection
-            //--------------------------
-
-            // define an order pointer
-            order = (ORDER*)malloc(population->numIndiv*sizeof(ORDER));
+        // define an order pointer
+            order = (ORDER*)calloc(population->numIndiv, sizeof(ORDER));
             if(order == NULL){
                 printf("ERROR 5: order cannot be created!");
                 exit(1);
             }
+    max_fit = 0;
+    //--------------------------
+    //--------------------------
+    for(don=0; don < 100; don++){
+        
+
+        
+        for(n=0; n<population->numIndiv; n++){
+ 
+            //--------------------------
+            // 3. Random Selection
+            //--------------------------
+            
 
             for(i=0; i<population->numIndiv; i++){
                 order[i].index = i;
@@ -716,36 +711,40 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, int mu
             //     printf( "end: %d\n", order[i].intervalEnd);
             //     printf("\n");
             // }
-
+            
             // Random Selection for the parents
             // printf("\n--------------------------------------------------------\n");
             // printf("\nPARENTS\n");
             selected_indiv1 =  random_selection(order, population);
-            // print_individual(selected_indiv1, population->numWord);
-            // printf("\n");
+
+            //print_individual(selected_indiv1, population->numWord);
+            //printf("\n");
+            
             selected_indiv2 =  random_selection(order, population);
-            // print_individual(selected_indiv2, population->numWord);
-
+            //print_individual(selected_indiv2, population->numWord);
+            // printf("\\nreproduce once\n\n");
             // Creating the child from the parents by crossover operation
-            // printf("\n\nCHILD\n\n");
+            //printf("\n\nCHILD\n\n");
             new_indiv = reproduce(dict_cache, population, selected_indiv1, selected_indiv2, population->numWord);
-            // print_individual(new_indiv, population->numWord);
-
+            //print_individual(new_indiv, population->numWord);
+            //printf("\\nreproduce once\n\n");
             //--------------------------
             // 4. Mutation
             //--------------------------
-
+            
             // mutation probability
             mutation_prob = rand() % 100;
+            float value = (float)(step*mut_coefficient)/(don/1);
+            //printf("\nvalue: %f\n", value);
             // printf("\n--------------------------------------------------------\n");
-            //if(mutation_prob > step*mut_coefficient){
-                // printf("\nMUTATION\n");
+            if(mutation_prob > value){
+                //printf("\nMUTATION\n");
                 new_indiv = mutation(new_indiv, population, dict_cache);
-            //}
+            }
             //else{
                 // printf("\nMUTATION didn't happen\n");
             //}
-            // print_individual(new_indiv, population->numWord);
+            //print_individual(new_indiv, population->numWord);
 
             for(i=0; i<population->numWord; i++){
                 strcpy(new_population->individuals[n].nuc_codes[i].word, new_indiv->nuc_codes[i].word);
@@ -753,6 +752,7 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, int mu
             }
 
             step++;
+            //printf("\nstep: %d\n", step);
         }
 
         //--------------------------
@@ -772,28 +772,18 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, int mu
         population->numIndiv = new_population->numIndiv;
         population->numWord = new_population->numWord;
 
-        max_fit = new_population->individuals[0].fitness;
-        for(i=1; i<new_population->numIndiv; i++){
+        //max_fit = new_population->individuals[0].fitness;
+        for(i=0; i<new_population->numIndiv; i++){
             if(new_population->individuals[i].fitness > max_fit){
                 max_fit = new_population->individuals[i].fitness;
             }
         }
 
-        printf("\nmax_fit: %f", max_fit);
-        printf("\nstep: %d\n", step);
+        // printf("\nmax_fit: %f", max_fit);
+        // printf("\nstep: %d\n", step);
 
-        // print the population
-        printf("\nNEW_POPULATION\n");
-        printf("----------\n");
-        for(i=0; i<new_population->numIndiv; i++){
-            printf("Individual %d: \n", i);
-            printf("[");
-            print_individual(&(new_population->individuals[i]), new_population->numWord);
-            printf("]");
-            printf("\nfitness: %f\n", new_population->individuals[i].fitness);
-            printf("\n");
-        }
-
+        
+        
         // // print the population
         // printf("\nPOPULATION\n");
         // printf("----------\n");
@@ -805,7 +795,22 @@ void genetic_algorithm(DICT_CACHE *dict_cache, int numWord, int numIndiv, int mu
         //     printf("\nfitness: %f\n", population->individuals[i].fitness);
         //     printf("\n");
         // }
+
+        // printf("\ndon: %d\n", don);
     }
+
+    // print the population
+        printf("\nNEW_POPULATION\n");
+        printf("----------\n");
+        for(i=0; i<new_population->numIndiv; i++){
+            printf("Individual %d: \n", i);
+            printf("[");
+            print_individual(&(new_population->individuals[i]), new_population->numWord);
+            printf("]");
+            printf("\nfitness: %f\n", new_population->individuals[i].fitness);
+            printf("\n");
+        }
+        printf("\nmax_fit: %f", max_fit);
 }
 
 INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord){
@@ -814,7 +819,7 @@ INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord){
 
     int i, j;
     // nucleotid codes (individual's words number)
-    nuc_codes = (NUCLEOTIDE*)malloc(numWord*sizeof(NUCLEOTIDE));
+    nuc_codes = (NUCLEOTIDE*)calloc(numWord, sizeof(NUCLEOTIDE));
     if(nuc_codes == NULL){
         printf("ERROR 15: nuc_codes cannot be created!");
         exit(1);
@@ -838,7 +843,7 @@ INDIVIDUAL *create_individual(DICT_CACHE *dict_cache, int numWord){
     }
 
     // define an individual
-    individual = (INDIVIDUAL*)malloc(sizeof(INDIVIDUAL));
+    individual = (INDIVIDUAL*)calloc(1, sizeof(INDIVIDUAL));
     if(individual == NULL){
         printf("ERROR 16: individual cannot be created!");
         exit(1);
@@ -907,8 +912,16 @@ POPULATION *fitness_function(DICT_CACHE *dict_cache, POPULATION *population, CAC
             if(counter1 > counter2){
                 class = dict_cache->dict1->class;
             }
-            else{
+            else if(counter1 < counter2){
                 class = dict_cache->dict2->class;
+            }
+            if(counter1 == counter2){
+                    if(rand() % 2 == 0){
+                        class = dict_cache->dict1->class;
+                    }
+                    else{
+                        class = dict_cache->dict2->class;
+                    }
             }
 
             // control whatever prediction is true or false 
@@ -948,34 +961,44 @@ INDIVIDUAL *reproduce(DICT_CACHE *dict_cache, POPULATION *population, INDIVIDUAL
 
     int i, rand_value;
 
+
     // create a child with random nucleotide codes
     child = create_individual(dict_cache, numWord);
-
+    //printf("\n\nheyy\n\n");
     // copy the parent1 codes to child
     for(i=0; i<numWord; i++){
-        strcpy(child->nuc_codes[i].word, parent1->nuc_codes[i].word);
+        child->nuc_codes[i].word = parent1->nuc_codes[i].word;
+        //printf("\n\nword\n\n");
         child->nuc_codes[i].frequency = parent1->nuc_codes[i].frequency;
         child->fitness = parent1->fitness;
     }
-
-    // crossover with random ratio for class 1
-    rand_value = rand() % numWord/2;
-    if(rand_value != 0){
-        // copy parent 2's nucleotide codes to child codes 
-        // start index: rand value
-        for(i=rand_value; i<numWord/2; i++){
-            strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
+    //printf("\n\nasdf\n\n");
+    int rand_class;
+    rand_class = rand() % 2;
+    if(rand_class == 0){
+        // crossover with random ratio for class 1
+        rand_value = rand() % numWord/2;
+        if(rand_value != 0){
+            // copy parent 2's nucleotide codes to child codes 
+            // start index: rand value
+            for(i=rand_value; i<numWord/2; i++){
+                strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
+            }
         }
     }
-    // crossover for class 2
-    rand_value = rand() % numWord/2;
-    rand_value += numWord/2;
-    if(rand_value != numWord/2){
-        for(i=rand_value; i<numWord; i++){
-            strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
+    else{
+        // crossover for class 2
+        rand_value = rand() % numWord/2;
+        rand_value += numWord/2;
+        if(rand_value != numWord/2){
+            for(i=rand_value; i<numWord; i++){
+                strcpy(child->nuc_codes[i].word, parent2->nuc_codes[i].word);
+            }
         }
     }
-
+    
+    
+    
     return child;
 }
 
@@ -984,16 +1007,16 @@ INDIVIDUAL *mutation(INDIVIDUAL *individual, POPULATION *population, DICT_CACHE 
 
     // which class will be mutated
     rand_class = rand() % 2;
-    //printf("\nrand_class: %d\n", rand_class);
+    // printf("\nrand_class: %d\n", rand_class);
 
     // class 1
     if(rand_class == 0){
         // which index will be mutated
         rand_index = rand() % population->numWord/2;
-        //printf("rand_index: %d\n", rand_index);
+        // printf("rand_index: %d\n", rand_index);
         // select the new word
         rand_word = rand() % dict_cache->num1;
-        //printf("new word: %s\n", dict_cache->dict1[rand_word].word);
+        // printf("new word: %s\n", dict_cache->dict1[rand_word].word);
         // assigne the new word and it's frequency
         strcpy(individual->nuc_codes[rand_index].word, dict_cache->dict1[rand_word].word);
         individual->nuc_codes[rand_index].frequency = dict_cache->dict1[rand_word].frequency;
@@ -1002,9 +1025,9 @@ INDIVIDUAL *mutation(INDIVIDUAL *individual, POPULATION *population, DICT_CACHE 
     else{
         rand_index = rand() % population->numWord/2;
         rand_index += population->numWord/2;
-        //printf("rand_index: %d\n", rand_index);
+        // printf("rand_index: %d\n", rand_index);
         rand_word = rand() % dict_cache->num2;
-        //printf("new word: %s\n", dict_cache->dict2[rand_word].word);
+        // printf("new word: %s\n", dict_cache->dict2[rand_word].word);
         strcpy(individual->nuc_codes[rand_index].word, dict_cache->dict2[rand_word].word);
         individual->nuc_codes[rand_index].frequency = dict_cache->dict2[rand_word].frequency;
     }
